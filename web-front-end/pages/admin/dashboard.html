@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-buttons button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        .action-buttons button.delete {
+            background-color: #f44336;
+        }
+
+        .action-buttons button.delete:hover {
+            background-color: #e53935;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <table id="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Users will be loaded here -->
+        </tbody>
+    </table>
+
+    <script>
+        async function loadUsers() {
+            const response = await fetch('http://127.0.0.1:4001/admin/user', {
+                credentials: "include"
+            });
+            const users = (await response.json())?.payload;
+            if (!users) {
+                alert('Failed to load users');
+                window.location.href = '../index.html';
+                return;
+            }
+            const tbody = document.getElementById('users-table').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            users.forEach(user => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = user.id;
+                row.insertCell(1).innerText = user.email;
+    
+                const actionsCell = row.insertCell(2);
+                const actionButtonsDiv = document.createElement('div');
+                actionButtonsDiv.className = 'action-buttons';
+    
+                const editButton = document.createElement('button');
+                editButton.innerText = 'Edit';
+                editButton.onclick = () => {
+                    window.location.href = `./user.html?user_id=${user.id}`;
+                };
+                actionButtonsDiv.appendChild(editButton);
+    
+                const deleteButton = document.createElement('button');
+                deleteButton.innerText = 'Delete';
+                deleteButton.className = 'delete';
+                deleteButton.onclick = async () => {
+                    if (confirm(`Are you sure you want to delete user ${user.username}?`)) {
+                        try {
+                            const deleteResponse = await fetch('http://127.0.0.1:4001/auth/delete/user', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ username: user.username }),
+                                credentials: "include"
+                            });
+                            if (!deleteResponse.ok) {
+                                throw new Error('Failed to delete user due to a server error.');
+                            }
+                            const deleteResult = await deleteResponse.json();
+                            if (deleteResult.ok) {
+                                alert('User deleted successfully');
+                                loadUsers();
+                            } else {
+                                alert('Failed to delete user');
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('An error occurred while deleting the user.');
+                        }
+                    }
+                };
+                actionButtonsDiv.appendChild(deleteButton);
+
+                actionsCell.appendChild(actionButtonsDiv);
+            });
+        }
+    
+        loadUsers();
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"] {
+            background-color: #4CAF50;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        #delete-account-button {
+            background-color: #f44336;
+            margin-top: 10px;
+        }
+
+        #delete-account-button:hover {
+            background-color: #e53935;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>User Profile</h1>
+    <form id="profile-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="contact_number">Contact Number:</label>
+        <input type="tel" id="contact_number" name="contact_number" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <button type="submit">Update Profile</button>
+        <button id="delete-account-button" type="button">Delete Account</button>
+    </form>
+
+    <script>
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('http://127.0.0.1:4001/auth/user', {
+                    credentials: "include"
+                });
+                const user = (await response.json())?.payload;
+                if (!user) {
+                    alert('Failed to load user profile');
+                    window.location.href = './index.html';
+                    return;
+                }
+                document.getElementById('username').value = user.username;
+                document.getElementById('contact_number').value = user.contact_number;
+                document.getElementById('email').value = user.email;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load user profile.');
+            }
+        }
+
+        document.getElementById('delete-account-button').addEventListener('click', async function () {
+            const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+            if (confirmDelete) {
+                try {
+                    const username = document.getElementById('username').value;
+                    const response = await fetch('http://127.0.0.1:4001/auth/delete/user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username }),
+                        credentials: "include"
+                    });
+                    if (!response.ok) {
+                        throw new Error('Failed to delete account due to a server error.');
+                    }
+                    const result = await response.json();
+                    if (result.ok) {
+                        alert('Account deleted successfully');
+                        window.location.href = './index.html';
+                    } else {
+                        alert('Failed to delete account');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the account.');
+                }
+            }
+        });
+
+        document.getElementById('profile-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            try {
+                const username = document.getElementById('username').value;
+                const contact_number = document.getElementById('contact_number').value;
+                const email = document.getElementById('email').value;
+                const response = await fetch('http://127.0.0.1:4001/auth/user', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, contact_number }),
+                    credentials: "include"
+                });
+                const result = await response.json();
+                if (result.ok) {
+                    alert('Profile updated successfully');
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while updating the profile.');
+            }
+        });
+
+        loadUserProfile();
+    </script>
+</body>
+
+</html>
